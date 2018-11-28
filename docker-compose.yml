@@ -1,0 +1,44 @@
+version: "3.7"
+services:
+    
+    db:
+        build: ./db
+        container_name: pet_db
+        networks: 
+            - pet_net
+        volumes: 
+            - db_data:/var/lib/mysql
+        environment:
+            - MYSQL_ROOT_PASSWORD=5tgb6yhn
+    api:
+        depends_on: 
+            - db
+        build: ./api
+        container_name: pet_api
+        networks: 
+            - pet_net
+        environment:
+            - API_DEBUG=True
+            - API_HOSTS=api
+    proxy:
+        depends_on: 
+            - api
+        build: ./proxy
+        container_name: pet_proxy
+        volumes:
+            - type: volume
+              source: proxy_certs
+              target: /certs
+              read_only: true
+        networks: 
+            - pet_net
+        ports: 
+            - "8000:8000"
+
+networks:
+    pet_net:
+
+volumes:
+    db_data:
+    proxy_certs:
+
