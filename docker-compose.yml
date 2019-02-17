@@ -20,6 +20,8 @@ services:
         environment:
             - API_DEBUG=True
             - API_HOSTS=api
+            - API_SECRET=secret
+            - DB_NAME=pet_db
     proxy:
         depends_on: 
             - api

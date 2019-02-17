@@ -27,7 +27,6 @@ DEBUG = True if os.environ.get('API_DEBUG', None) == 'True' else False
 
 ALLOWED_HOSTS = list(os.environ.get('API_HOSTS').split(','))
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -118,6 +117,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/

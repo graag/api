@@ -8,5 +8,4 @@ class IsPetPermission(permissions.BasePermission):
     message = 'Bad PETNAME. No PET associated with this name.'
 
     def has_permission(self, request, view):
-        print('PERMISSION', request.entity)
         return request.entity is not None
