@@ -1,8 +1,12 @@
 FROM mariadb
 
-ENV MYSQL_DATABASE=pet_db
-ENV MYSQL_USER=pet_user
-ENV MYSQL_PASSWORD=5tgb6yhn
+ARG dbname=pet_db
+ARG dbuser=pet_user
+ARG dbpswd=5tgb6yhn
+
+ENV MYSQL_DATABASE=${dbname}
+ENV MYSQL_USER=${dbuser}
+ENV MYSQL_PASSWORD=${dbpswd}
 
 COPY ./db_api_data.sql /db_api_data.sql
 COPY ./init_script.sh /docker-entrypoint-initdb.d/init_script.sh
