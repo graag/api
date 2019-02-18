@@ -40,7 +40,102 @@ Budowanie obrazu o nazwie `api/test` akceptującego zapytania pod adres `localho
 
 Uruchomienie kontenera
 ----------------------
-TODO
+
+Przed uruchomieniem kontenera api należy pamiętać o zminnej `API_SECRET`. Nowy hash można wygenerować korzystając z funckcji usdostępnianych przez [Django][django-url].
+
+```bash
+    python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())
+    ...
+    nh&)%(^n8_k8hgrs6%onq5&(ynw9395#s%5#b5k9fofd%8t&8c
+```
+
+Przykład uruchomienia kontenera api działającego w sieci docker'owej, akceptującego zapytania do host'a `localhost` (zakładając obraz zbudowany za pomocą komendy z poprzedniej sekcji), oraz korzystającego z bazy danych o nazwie `test_db` udostępnionej przez hosta `db_server`.
+
+```bash
+    docker run -it \
+        --name api \
+        --network pet_net \
+        -e "DB_NAME=test_db" \
+        -e "DB_HOST=db_server" \
+        -e "API_SECRET=nh&)%(^n8_k8hgrs6%onq5&(ynw9395#s%5#b5k9fofd%8t&8c" \
+        pet/api
+```
+
+Przykład pracy z api w trybie DEBUG
+-----------------------------------
+Budowa obrazu:
+
+```bash
+    docker build \
+        --tag test/api \
+        .
+```
+
+Uruchomienie obrazu:
+
+```bash
+docker run -it \
+    --name api-debug \
+    -p 8000:8000 \
+    -e "DB_DEBUG=True" \
+    -e "API_DEBUG=True" \
+    -e "API_HOSTS=localhost" \
+    -e "API_SECRET=secret" \
+    test/api
+```
+Po wykonaniu powyższych komend shell-a, uruchomiona zostanie instancja api, która:
+ * korzysta z bazy danych utworzonej wewnątrz systemu plików kontenera (wymagana wstępna migracja)
+ * akceptuje zapytania skierowane do host-a `localhost`
+ * nasłuchuje na porcie `8000`
+ * w przypadku błędnych zapytań zwraca dane ułatwiające dalsze debugowanie
+
+Migracja:
+
+```bash
+    docker exec -it api-debug /bin/sh -c \
+    "python3 manage.py makemigrations rest && python3 manage.py migrate"
+```
+
+Api zakłada, że znajduje się za serwerem proxy zapewniającym wstępną autoryzację i autekntyfikację. Wynik zapytania do api silnie zleży od pola `CN` w certyfikacie SSL. Aby zasymulować działanie serwera proxy i obsługę zapytania należy:
+
+1. Utowrzyć wpis w bazie danych odpowiadający modelowi `Entity`, którego pole `common_name` powinno odpowiadać polu w certyfikacie i znajdować się w nagłówku `CLIENT_CERT` wraz z innymi danymi o certyfikacie.
+
+```bash
+    docker exec -it api-debug /bin/sh -c \
+    "python3 manage.py shell"
+
+    from rest.models import Entity
+    Entity(
+        common_name='test_entity',
+
+    ).save()
+    exit()
+```
+
+2. Stworzyć zapytanie z odpowiednio ustawionym nagłówkiem `CLIENT_CERT`.
+```bash
+    curl http://localhost:8000/api/entity \
+    -H "CLIENT_CERT: CN=test_entity"
+    ...
+    {
+        "id":1,
+        "common_name":"test_entity",
+        "name":"",
+        "address":"",
+        "contact":"",
+        "comments":null,"timestamp":"2019-02-18T20:34:36.813165Z"
+    }
+```
+
+W ramach zapytania, zwrócone zostały dane o obiekcie Entity odpowiadającemu `CN` certyfikatu. Zapytanie zawierające błędna (nieistniejącą w bazie danych) wartość `CN` lub nie zawierające nagłówka `CLIENT_CERT` zakończy się niepowodzeniem.
+
+```bash
+    curl http://localhost:8000/api/entity
+    ...
+    {
+        "detail":"Authentication credentials were not provided."
+    }
+```
 
 Endpointy
 ---------
