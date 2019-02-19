@@ -41,7 +41,7 @@ Budowanie obrazu o nazwie `api/test` akceptującego zapytania pod adres `localho
 Uruchomienie kontenera
 ----------------------
 
-Przed uruchomieniem kontenera api należy pamiętać o zminnej `API_SECRET`. Nowy hash można wygenerować korzystając z funckcji usdostępnianych przez [Django][django-url].
+Przed uruchomieniem kontenera api należy pamiętać o zminnej `API_SECRET`. Podczas każdej budowy obrazu api generowany i zapisywany do pliky jest nowy hash. Ta wartość wykorzystywana jest w przypadku, gdy kontener zostanie uruchomiony bez ustawienia wartości `API_SECRET`. Nowy hash można wygenerować korzystając z funckcji usdostępnianych przez [Django][django-url].
 
 ```bash
     python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())

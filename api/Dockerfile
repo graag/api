@@ -18,7 +18,6 @@ ENV DB_PASS=5tgb6yhn
 ENV DB_HOST=pet_db
 ENV DB_PORT=3306
 
-# RUN mkdir /config && mkdir /opt/pet
 COPY ./requirements.pip /
 RUN pip install -r /requirements.pip && \
     rm /requirements.pip
@@ -27,6 +26,11 @@ RUN mkdir /opt/pet_api
 COPY ./src /opt/pet_api
 
 WORKDIR /opt/pet_api
+
+RUN python3 -c \
+    "from django.core.management.utils import get_random_secret_key;print(get_random_secret_key())" \
+    > secret_key
+
 EXPOSE 8000
 
 ENTRYPOINT ["gunicorn"]
