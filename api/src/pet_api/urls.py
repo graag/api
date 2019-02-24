@@ -20,5 +20,7 @@ from . import test_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('test/', test_views.index),
-    path('api/', include('rest.urls'))
+    path('api/', include('rest.urls')),
+    path('ca/', include('rest.ca_urls')),
+
 ]

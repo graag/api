@@ -1,14 +1,21 @@
 import sys
+import json
+from urllib.request import urlopen
 from subprocess import run
 
+def _run_easy(*args):
+    run(['./ca/easyrsa', *args])
 
 def ca_init(*args):
-    run(['./ca/easyrsa', 'init-pki'])
-    run(['./ca/easyrsa', 'build-ca'])
+    _run_easy('init-pki')
+    _run_easy('build-ca')
+    _run_easy('gen-crl')
+    _run_easy('gen-dh')
 
 
 def generate_proxy(*args):
-    print('generate proxy')
+    _run_easy('gen-req', 'proxy', 'nopass')
+    _run_easy('sign-req', 'server', 'proxy')
 
 
 def exit(*args):
@@ -16,7 +23,12 @@ def exit(*args):
 
 
 def list_entities(*args):
-    print('entities')
+    response = urlopen('http://pet-api:8000/ca/entities')
+    json_data = json.loads(response.read())
+    id_name_map = map(lambda data: f'{data["id"]}: {data["common_name"]}', json_data)
+    for entity in id_name_map:
+        print(entity)
+
 
 def list_auths(entity_name, *args):
     print(f'listing for {entity_name}')

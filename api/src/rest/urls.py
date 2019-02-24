@@ -30,4 +30,5 @@ urlpatterns = [
 
     path('authorizations', views.AuthorizationView.as_view()),
     path('authorizations/active', views.AuthorizationActiveView.as_view()),
+    path('cert/entities', views.EntityCAView.as_view())
 ]

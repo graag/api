@@ -9,5 +9,5 @@ RUN mkdir -p /opt/ca && \
 WORKDIR /opt
 
 COPY ./easyrsa-src ./ca
-
+COPY ./ca-entrypoint.py .
 ENTRYPOINT ["/bin/bash"]

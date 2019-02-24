@@ -21,6 +21,7 @@ class EntityCAView(generics.ListAPIView):
     queryset = models.Entity.objects.all()
     serializer_class = serializers.EntityBasicSerializer
 
+
 class EntityByCN(generics.RetrieveAPIView):
     serializer_class = serializers.EntityBasicSerializer
 
