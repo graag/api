@@ -3,44 +3,49 @@ services:
     
     db:
         build: ./db
-        container_name: pet_db
+        container_name: pet-db
         networks: 
-            - pet_net
-        volumes: 
-            - db_data:/var/lib/mysql
+            - pet-net
+        volumes:
+            - type: volume
+              source: db-data
+              target: /var/lib/mysql
         environment:
             - MYSQL_ROOT_PASSWORD=5tgb6yhn
     api:
         depends_on: 
             - db
         build: ./api
-        container_name: pet_api
+        container_name: pet-api
         networks: 
-            - pet_net
+            - pet-net
         environment:
             - API_DEBUG=True
-            - API_HOSTS=api
-            - API_SECRET=secret
+            - API_HOSTS=pet-api
             - DB_NAME=pet_db
+            - DB_HOST=pet-db
     proxy:
         depends_on: 
             - api
         build: ./proxy
-        container_name: pet_proxy
+        container_name: pet-proxy
         volumes:
             - type: volume
-              source: proxy_certs
+              source: proxy-data
               target: /certs
               read_only: true
         networks: 
-            - pet_net
+            - pet-net
         ports: 
             - "8000:8000"
 
 networks:
-    pet_net:
+    pet-net:
 
 volumes:
-    db_data:
-    proxy_certs:
+    db-data:
+        name: db-data
+    proxy-data:
+        external: true
+        name: proxy-data-test
 

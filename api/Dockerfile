@@ -15,7 +15,7 @@ ENV DB_DEBUG=False
 ENV DB_NAME=pet_db
 ENV DB_USER=pet_user
 ENV DB_PASS=5tgb6yhn
-ENV DB_HOST=pet_db
+ENV DB_HOST=pet-db
 ENV DB_PORT=3306
 
 COPY ./requirements.pip /

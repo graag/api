@@ -20,6 +20,5 @@ class AuthMiddleware:
             request.entity = entity
         except Exception:
             # TODO: more specific exception handling
-            # TODO: handle proper response to client
             request.entity = None
         return self.get_response(request)
