@@ -33,11 +33,14 @@ Here is the list of commands available with a short syntax reminder. Use the
   sign-req <type> <filename_base>
   build-client-full <filename_base> [ cmd-opts ]
   build-server-full <filename_base> [ cmd-opts ]
-  revoke <filename_base>
+  revoke <filename_base> [cmd-opts]
+  renew <filename_base> [cmd-opts]
+  build-serverClient-full <filename_base> [ cmd-opts ]
   gen-crl
   update-db
   show-req <filename_base> [ cmd-opts ]
   show-cert <filename_base> [ cmd-opts ]
+  show-ca [ cmd-opts ]
   import-req <request_file_path> <short_basename>
   export-p7 <filename_base> [ cmd-opts ]
   export-p12 <filename_base> [ cmd-opts ]
@@ -84,21 +87,35 @@ cmd_help() {
 		sign|sign-req) text="
   sign-req <type> <filename_base>
       Sign a certificate request of the defined type. <type> must be a known
-      type such as 'client', 'server', or 'ca' (or a user-added type.)
+      type such as 'client', 'server', 'serverClient', or 'ca' (or a user-added type.)
 
       This request file must exist in the reqs/ dir and have a .req file
       extension. See import-req below for importing reqs from other sources." ;;
-		build|build-client-full|build-server-full) text="
+		build|build-client-full|build-server-full|build-serverClient-full) text="
   build-client-full <filename_base> [ cmd-opts ]
   build-server-full <filename_base> [ cmd-opts ]
-      Generate a keypair and sign locally for a client or server
+  build-serverClient-full <filename_base> [ cmd-opts ]
+      Generate a keypair and sign locally for a client and/or server
 
       This mode uses the <filename_base> as the X509 CN."
 			opts="
         nopass  - do not encrypt the private key (default is encrypted)" ;;
 		revoke) text="
-  revoke <filename_base>
-      Revoke a certificate specified by the filename_base" ;;
+  revoke <filename_base> [reason]
+      Revoke a certificate specified by the filename_base, with an optional 
+      revocation reason that is one of: 
+        unspecified
+        keyCompromise
+        CACompromise
+        affiliationChanged
+        superseded
+        cessationOfOperation
+        certificateHold";;
+		renew) text="
+  renew <filename_base> [ cmd-opts ]
+      Renew a certificate specified by the filename_base"
+				opts="
+        nopass  - do not encrypt the private key (default is encrypted)" ;;
 		gen-crl) text="
   gen-crl
       Generate a CRL" ;;
@@ -117,6 +134,13 @@ cmd_help() {
       showing a request."
       			opts="
           full   - show full req/cert info, including pubkey/sig data" ;;
+		show-ca) text="
+  show-ca [ cmd-opts ]
+      Shows details of the CA cert
+
+      Human-readable output is shown."
+			opts="
+          full   - show full cert info, including pubkey/sig data" ;;
 		import-req) text="
   import-req <request_file_path> <short_basename>
       Import a certificate request from a file
@@ -230,6 +254,7 @@ die() {
 Easy-RSA error:
 
 $1" 1>&2
+	clean_temp;
 	prog_exit "${2:-1}"
 } # => die()
 
@@ -282,37 +307,39 @@ Type the word '$value' to continue, or any other input to abort."
 
 # remove temp files
 clean_temp() {
-	for f in "$EASYRSA_TEMP_CONF" "$EASYRSA_TEMP_EXT" "$EASYRSA_TEMP_FILE_2" "$EASYRSA_TEMP_FILE_3"
+	for f in "$EASYRSA_TEMP_CONF" "$EASYRSA_TEMP_EXT" \
+		"$EASYRSA_TEMP_FILE_2" "$EASYRSA_TEMP_FILE_3" "$EASYRSA_TEMP_FILE_4"
 	do	[ -f "$f" ] && rm "$f" 2>/dev/null
 	done
 } # => clean_temp()
 
 prog_exit() {
 	ESTAT=0
-	[ ! -z "$1" ] && ESTAT=$1
-	(set -o echo 2>/dev/null) || stty echo
+	[ -n "$1" ] && ESTAT=$1
+	(stty echo 2>/dev/null) || set -o echo
 	echo "" # just to get a clean line
-	exit $ESTAT
+	exit "$ESTAT"
 } # => prog_exit()
 
 # Make LibreSSL safe config file from OpenSSL config file
 make_ssl_config() {
-sed	-e "s,ENV::,,g" \
-	-e "s,\$dir,$EASYRSA_PKI,g" \
-	-e "s,\$EASYRSA_PKI,$EASYRSA_PKI,g" \
-	-e "s,\$EASYRSA_CERT_EXPIRE,$EASYRSA_CERT_EXPIRE,g" \
-	-e "s,\$EASYRSA_CRL_DAYS,$EASYRSA_CRL_DAYS,g" \
-	-e "s,\$EASYRSA_DIGEST,$EASYRSA_DIGEST,g" \
-	-e "s,\$EASYRSA_KEY_SIZE,$EASYRSA_KEY_SIZE,g" \
-	-e "s,\$EASYRSA_DIGEST,$EASYRSA_DIGEST,g" \
-	-e "s,\$EASYRSA_DN,$EASYRSA_DN,g" \
-	-e "s,\$EASYRSA_REQ_COUNTRY,$EASYRSA_REQ_COUNTRY,g" \
-	-e "s,\$EASYRSA_REQ_PROVINCE,$EASYRSA_REQ_PROVINCE,g" \
-	-e "s,\$EASYRSA_REQ_CITY,$EASYRSA_REQ_CITY,g" \
-	-e "s,\$EASYRSA_REQ_ORG,$EASYRSA_REQ_ORG,g" \
-	-e "s,\$EASYRSA_REQ_OU,$EASYRSA_REQ_OU,g" \
-	-e "s,\$EASYRSA_REQ_CN,$EASYRSA_REQ_CN,g" \
-	-e "s,\$EASYRSA_REQ_EMAIL,$EASYRSA_REQ_EMAIL,g" \
+sed \
+       -e "s\`ENV::EASYRSA\`EASYRSA\`g" \
+       -e "s\`\$dir\`$EASYRSA_PKI\`g" \
+       -e "s\`\$EASYRSA_PKI\`$EASYRSA_PKI\`g" \
+       -e "s\`\$EASYRSA_CERT_EXPIRE\`$EASYRSA_CERT_EXPIRE\`g" \
+       -e "s\`\$EASYRSA_CRL_DAYS\`$EASYRSA_CRL_DAYS\`g" \
+       -e "s\`\$EASYRSA_DIGEST\`$EASYRSA_DIGEST\`g" \
+       -e "s\`\$EASYRSA_KEY_SIZE\`$EASYRSA_KEY_SIZE\`g" \
+       -e "s\`\$EASYRSA_DIGEST\`$EASYRSA_DIGEST\`g" \
+       -e "s\`\$EASYRSA_DN\`$EASYRSA_DN\`g" \
+       -e "s\`\$EASYRSA_REQ_COUNTRY\`$EASYRSA_REQ_COUNTRY\`g" \
+       -e "s\`\$EASYRSA_REQ_PROVINCE\`$EASYRSA_REQ_PROVINCE\`g" \
+       -e "s\`\$EASYRSA_REQ_CITY\`$EASYRSA_REQ_CITY\`g" \
+       -e "s\`\$EASYRSA_REQ_ORG\`$EASYRSA_REQ_ORG\`g" \
+       -e "s\`\$EASYRSA_REQ_OU\`$EASYRSA_REQ_OU\`g" \
+       -e "s\`\$EASYRSA_REQ_CN\`$EASYRSA_REQ_CN\`g" \
+       -e "s\`\$EASYRSA_REQ_EMAIL\`$EASYRSA_REQ_EMAIL\`g" \
 	"$EASYRSA_SSL_CONF" > "$EASYRSA_SAFE_CONF" || die "\
 Failed to update $EASYRSA_SAFE_CONF"
 } # => make_ssl_config()
@@ -321,28 +348,6 @@ vars_source_check() {
 	# Check for defined EASYRSA_PKI
 	[ -n "$EASYRSA_PKI" ] || die "\
 EASYRSA_PKI env-var undefined"
-
-	# make safessl-easyrsa.cnf
-	make_ssl_config
-
-	# Verify EASYRSA_OPENSSL command gives expected output
-	if [ -z "$EASYRSA_SSL_OK" ]; then
-		val="$("$EASYRSA_OPENSSL" version)"
-		case "${val%% *}" in
-			OpenSSL|LibreSSL)
-				notice "\
-Using SSL: $EASYRSA_OPENSSL $("$EASYRSA_OPENSSL" version)" ;;
-			*) die "\
-Missing or invalid OpenSSL
-Expected to find openssl command at: $EASYRSA_OPENSSL" ;;
-		esac
-	fi
-	EASYRSA_SSL_OK=1
-
-	# Verify EASYRSA_SSL_CONF file exists
-	[ -f "$EASYRSA_SSL_CONF" ] || die "\
-The OpenSSL config file cannot be found.
-Expected location: $EASYRSA_SSL_CONF"
 } # => vars_source_check()
 
 # Verify supplied curve exists and generate curve file if needed
@@ -369,6 +374,30 @@ $out"
 	return 0
 }
 
+verify_ssl_lib () {
+	# make safessl-easyrsa.cnf
+	make_ssl_config
+
+	# Verify EASYRSA_OPENSSL command gives expected output
+	if [ -z "$EASYRSA_SSL_OK" ]; then
+		val="$("$EASYRSA_OPENSSL" version)"
+		case "${val%% *}" in
+			OpenSSL|LibreSSL)
+				notice "\
+Using SSL: $EASYRSA_OPENSSL $("$EASYRSA_OPENSSL" version)" ;;
+			*) die "\
+Missing or invalid OpenSSL
+Expected to find openssl command at: $EASYRSA_OPENSSL" ;;
+		esac
+	fi
+	EASYRSA_SSL_OK=1
+
+	# Verify EASYRSA_SSL_CONF file exists
+	[ -f "$EASYRSA_SSL_CONF" ] || die "\
+The OpenSSL config file cannot be found.
+Expected location: $EASYRSA_SSL_CONF"
+} # => verify_ssl_lib ()
+
 # Basic sanity-check of PKI init and complain if missing
 verify_pki_init() {
 	help_note="Run easyrsa without commands for usage and command help."
@@ -386,6 +415,9 @@ $help_note"
 Missing expected directory: $i (perhaps you need to run init-pki?)
 $help_note"
 	done
+
+	# verify ssl lib
+	verify_ssl_lib
 } # => verify_pki_init()
 
 # Verify core CA files present
@@ -410,7 +442,10 @@ $help_note"
 	[ "$1" = "test" ] && return 0
 
 	# verify expected CA-specific dirs:
-	for i in issued certs_by_serial; do
+	for i in issued certs_by_serial \
+		 revoked/certs_by_serial revoked/private_by_serial revoked/reqs_by_serial \
+		 renewed/certs_by_serial renewed/private_by_serial renewed/reqs_by_serial ;
+	do
 		[ -d "$EASYRSA_PKI/$i" ] || die "\
 Missing expected CA dir: $i (perhaps you need to run build-ca?)
 $help_note"
@@ -440,7 +475,7 @@ and initialize a fresh PKI here."
 		mkdir -p "$EASYRSA_PKI/$i" || die "Failed to create PKI file structure (permissions?)"
 	done
 	
-	if [ ! -f "$EASYRSA_SSL_CONF" -a -f "$EASYRSA/openssl-easyrsa.cnf" ];
+	if [ ! -f "$EASYRSA_SSL_CONF" ] && [ -f "$EASYRSA/openssl-easyrsa.cnf" ];
 	then
 		cp "$EASYRSA/openssl-easyrsa.cnf" "$EASYRSA_SSL_CONF"
 	fi
@@ -454,9 +489,9 @@ Your newly created PKI dir is: $EASYRSA_PKI
 
 hide_read_pass()
 {
-	(set +o echo 2>/dev/null) || stty -echo
+	(stty -echo 2>/dev/null) || set +o echo
 	read -r "$@"
-	(set -o echo 2>/dev/null) || stty echo
+	(stty echo 2>/dev/null) || set -o echo
 } # => hide_read_pass()
 
 # build-ca backend:
@@ -503,7 +538,10 @@ current CA keypair. If you intended to start a new CA, run init-pki first."
 
 	# create necessary files and dirs:
 	err_file="Unable to create necessary PKI files (permissions?)"
-	for i in issued certs_by_serial; do
+	for i in issued certs_by_serial \
+		 revoked/certs_by_serial revoked/private_by_serial revoked/reqs_by_serial \
+		 renewed/certs_by_serial renewed/private_by_serial renewed/reqs_by_serial;
+	do
 		mkdir -p "$EASYRSA_PKI/$i" || die "$err_file"
 	done
 	printf "" > "$EASYRSA_PKI/index.txt" || die "$err_file"
@@ -517,7 +555,7 @@ current CA keypair. If you intended to start a new CA, run init-pki first."
 	out_file_tmp="$(mktemp "$out_file.XXXXXXXXXX")"; EASYRSA_TEMP_FILE_3="$out_file_tmp"
 	# Get password from user if necessary
 	if [ ! $nopass ]; then
-		out_key_pass_tmp="$(mktemp)"; EASYRSA_TEMP_FILE_3="$out_key_pass_tmp"
+		out_key_pass_tmp="$(mktemp)"; EASYRSA_TEMP_FILE_4="$out_key_pass_tmp"
 		echo
 		printf "Enter New CA Key Passphrase: "
 		hide_read_pass kpass
@@ -525,6 +563,7 @@ current CA keypair. If you intended to start a new CA, run init-pki first."
 		printf "Re-Enter New CA Key Passphrase: "
 		hide_read_pass kpass2
 		echo
+		# shellcheck disable=2154
 		if [ "$kpass" = "$kpass2" ];
 		then
 			printf "%s" "$kpass" > "$out_key_pass_tmp"
@@ -556,7 +595,7 @@ current CA keypair. If you intended to start a new CA, run init-pki first."
 
 	mv "$out_key_tmp" "$out_key"; EASYRSA_TEMP_FILE_2=
 	mv "$out_file_tmp" "$out_file"; EASYRSA_TEMP_FILE_3=
-	[ -f "$out_key_pass_tmp" ] && rm "$out_key_pass_tmp"
+	[ -f "$out_key_pass_tmp" ] && rm "$out_key_pass_tmp" && EASYRSA_TEMP_FILE_4=
 
 	# Success messages
 	if [ $sub_ca ]; then
@@ -649,7 +688,7 @@ $EASYRSA_EXTRA_EXTS"
 	req_out_tmp="$(mktemp "$req_out.XXXXXXXXXX")"; EASYRSA_TEMP_FILE_3="$req_out_tmp"
 	# generate request
 	[ $EASYRSA_BATCH ] && opts="$opts -batch"
-	# shellcheck disable=SC2086
+	# shellcheck disable=2086,2148
 	"$EASYRSA_OPENSSL" req -utf8 -new -newkey "$EASYRSA_ALGO":"$EASYRSA_ALGO_PARAMS" \
 		-config "$EASYRSA_SAFE_CONF" -keyout "$key_out_tmp" -out "$req_out_tmp" $opts \
 		|| die "Failed to generate request"
@@ -738,9 +777,10 @@ $(display_dn req "$req_in")
 			[ -n "$EASYRSA_NS_COMMENT" ] && \
 				print "nsComment = \"$EASYRSA_NS_COMMENT\""
 			case "$crt_type" in
-				server)	print "nsCertType = server" ;;
-				client)	print "nsCertType = client" ;;
-				ca)	print "nsCertType = sslCA" ;;
+				serverClient)	print "nsCertType = serverClient" ;;
+				server)		print "nsCertType = server" ;;
+				client)		print "nsCertType = client" ;;
+				ca)		print "nsCertType = sslCA" ;;
 			esac
 		fi
 
@@ -831,6 +871,11 @@ Error: didn't find a file base name as the first argument.
 Run easyrsa without commands for usage and command help."
 	crt_in="$EASYRSA_PKI/issued/$1.crt"
 
+	opts=""
+	if [ "$2" ]; then
+		opts="$opts -crl_reason $2"
+	fi
+	
 	verify_file x509 "$crt_in" || die "\
 Unable to revoke as the input file is not a valid certificate. Unexpected
 input in file: $crt_in"
@@ -850,8 +895,12 @@ at: $crt_in"
 	# make safessl-easyrsa.cnf
 	make_ssl_config
 
-	"$EASYRSA_OPENSSL" ca -utf8 -revoke "$crt_in" -config "$EASYRSA_SAFE_CONF" || die "\
+	# shellcheck disable=SC2086
+	"$EASYRSA_OPENSSL" ca -utf8 -revoke "$crt_in" -config "$EASYRSA_SAFE_CONF" $opts || die "\
 Failed to revoke certificate: revocation command failed."
+
+	# move revoked files so we can reissue certificates with the same name
+	move_revoked "$1"
 
 	notice "\
 IMPORTANT!!!
@@ -861,6 +910,228 @@ infrastructure in order to prevent the revoked cert from being accepted.
 "	# => notice end
 	return 0
 } #= revoke()
+
+# move-revoked
+# moves revoked certificates to an alternative folder
+# allows reissuing certificates with the same name
+move_revoked() {
+	verify_ca_init
+
+	[ -n "$1" ] || die "\
+Error: didn't find a file base name as the first argument.
+Run easyrsa without commands for usage and command help."
+
+	crt_in="$EASYRSA_PKI/issued/$1.crt"
+	key_in="$EASYRSA_PKI/private/$1.key"
+	req_in="$EASYRSA_PKI/reqs/$1.req"
+
+	verify_file x509 "$crt_in" || die "\
+Unable to move revoked input file. The file is not a valid certificate. Unexpected
+input in file: $crt_in"
+
+	verify_file req "$req_in" || die "\
+Unable to move request. The file is not a valid request. Unexpected
+input in file: $req_in"
+
+	# get the serial number of the certificate -> serial=XXXX
+	cert_serial="$("$EASYRSA_OPENSSL" x509 -in "$crt_in" -noout -serial)"
+	# remove the serial= part -> we only need the XXXX part
+	cert_serial=${cert_serial##*=}
+
+	crt_by_serial="$EASYRSA_PKI/certs_by_serial/$cert_serial.pem"
+	crt_by_serial_revoked="$EASYRSA_PKI/revoked/certs_by_serial/$cert_serial.crt"
+	key_by_serial_revoked="$EASYRSA_PKI/revoked/private_by_serial/$cert_serial.key"
+	req_by_serial_revoked="$EASYRSA_PKI/revoked/reqs_by_serial/$cert_serial.req"
+
+
+	# move crt, key and req file to revoked folders
+	mv "$crt_in" "$crt_by_serial_revoked"
+	mv "$req_in" "$req_by_serial_revoked"
+
+	# only move the key if we have it
+	if [ -e "$key_in" ]
+	then
+		mv "$key_in" "$key_by_serial_revoked"
+	fi
+
+	# move the rest of the files (p12, p7, ...)
+	# shellcheck disable=SC2231
+	for file in $EASYRSA_PKI/private/$1\.???
+	do
+		# get file extension
+		file_ext="${file##*.}"
+
+		[ -f "$file" ] && mv "$file" "$EASYRSA_PKI/revoked/private_by_serial/$cert_serial.$file_ext"
+	done
+
+	# remove the dublicate certificate in the certs_by_serial folder
+	rm "$crt_by_serial"
+
+	return 0
+
+} #= move_revoked()
+
+# renew backend
+renew() {
+	verify_ca_init
+
+	# pull filename base:
+	[ -n "$1" ] || die "\
+Error: didn't find a file base name as the first argument.
+Run easyrsa without commands for usage and command help."
+	crt_in="$EASYRSA_PKI/issued/$1.crt"
+
+	opts=""
+	if [ "$2" ]; then
+		opts="$2"
+	fi
+
+	verify_file x509 "$crt_in" || die "\
+Unable to renew as the input file is not a valid certificate. Unexpected
+input in file: $crt_in"
+
+	# confirm operation by displaying DN:
+	confirm "Continue with renew: " "yes" "
+Please confirm you wish to renew the certificate with the following subject:
+
+$(display_dn x509 "$crt_in")
+"	# => confirm end
+
+	# referenced cert must exist:
+	[ -f "$crt_in" ] || die "\
+Unable to renew as no certificate was found. Certificate was expected
+at: $crt_in"
+
+	# make safessl-easyrsa.cnf
+	make_ssl_config
+
+	# Check if old cert is expired or expires within 30 days
+	expire_date=$(
+		"$EASYRSA_OPENSSL" x509 -in "$crt_in" -noout -enddate |
+		sed 's/^notAfter=//'
+		)
+        case $(uname 2>/dev/null) in
+        	"Darwin"|*"BSD")
+                	expire_date=$(date -j -f '%b %d %T %Y %Z' "$expire_date" +%s)
+                	allow_renew_date=$(date -j -v"+${EASYRSA_CERT_RENEW}d" +%s)
+                	;;
+          	*)
+                	# This works on Windows, too, since uname doesn't exist and this is catch-all
+                	expire_date=$(date -d "$expire_date" +%s)
+                	allow_renew_date=$(date -d "+${EASYRSA_CERT_RENEW}day" +%s)
+                	;;
+        esac
+
+	[ "$expire_date" -lt "$allow_renew_date" ] || die "\
+Certificate expires in more than $EASYRSA_CERT_RENEW days.
+Renewal not allowed."
+
+	# Extract certificate usage from old cert
+	cert_ext_key_usage=$(
+		"$EASYRSA_OPENSSL" x509 -in "$crt_in" -noout -text |
+		sed -n "/X509v3 Extended Key Usage:/{n;s/^ *//g;p;}"
+		)
+	case $cert_ext_key_usage in
+		"TLS Web Client Authentication")
+			cert_type=client
+			;;
+		"TLS Web Server Authentication")
+			cert_type=server
+			;;
+		"TLS Web Server Authentication, TLS Web Client Authentication")
+			cert_type=serverClient
+			;;
+	esac
+
+	# Use SAN from --subject-alt-name if set else use SAN from old cert
+	echo "$EASYRSA_EXTRA_EXTS" | grep -q subjectAltName || \
+	{
+		san=$(
+			"$EASYRSA_OPENSSL" x509 -in "$crt_in" -noout -text |
+			sed -n "/X509v3 Subject Alternative Name:/{n;s/ //g;p;}"
+			)
+		[ -n "$san" ] && export EASYRSA_EXTRA_EXTS="\
+$EASYRSA_EXTRA_EXTS
+subjectAltName = $san"
+	}
+
+	# move renewed files so we can reissue certificate with the same name
+	# FIXME: Modify revoke() to also work on the renewed certs subdir
+	move_renewed "$1"
+
+	# renew certificate
+	# shellcheck disable=SC2086
+	build_full $cert_type $1 $opts || die "\
+Failed to renew certificate: renew command failed."
+
+	notice "\
+IMPORTANT!!!
+
+Renew was successful.
+You may want to revoke the old certificate once the new one has been deployed.
+"	# => notice end
+	return 0
+} #= renew()
+
+# move-renewed
+# moves renewed certificates to an alternative folder
+# allows reissuing certificates with the same name
+move_renewed() {
+	verify_ca_init
+
+	[ -n "$1" ] || die "\
+Error: didn't find a file base name as the first argument.
+Run easyrsa without commands for usage and command help."
+
+	crt_in="$EASYRSA_PKI/issued/$1.crt"
+	key_in="$EASYRSA_PKI/private/$1.key"
+	req_in="$EASYRSA_PKI/reqs/$1.req"
+
+	verify_file x509 "$crt_in" || die "\
+Unable to move renewed input file. The file is not a valid certificate. Unexpected
+input in file: $crt_in"
+
+	verify_file req "$req_in" || die "\
+Unable to move request. The file is not a valid request. Unexpected
+input in file: $req_in"
+
+	# get the serial number of the certificate -> serial=XXXX
+	cert_serial="$("$EASYRSA_OPENSSL" x509 -in "$crt_in" -noout -serial)"
+	# remove the serial= part -> we only need the XXXX part
+	cert_serial=${cert_serial##*=}
+
+	crt_by_serial="$EASYRSA_PKI/certs_by_serial/$cert_serial.pem"
+	crt_by_serial_renewed="$EASYRSA_PKI/renewed/certs_by_serial/$cert_serial.crt"
+	key_by_serial_renewed="$EASYRSA_PKI/renewed/private_by_serial/$cert_serial.key"
+	req_by_serial_renewed="$EASYRSA_PKI/renewed/reqs_by_serial/$cert_serial.req"
+
+
+	# move crt, key and req file to renewed folders
+	mv "$crt_in" "$crt_by_serial_renewed"
+	mv "$req_in" "$req_by_serial_renewed"
+
+	# only move the key if we have it
+	if [ -e "$key_in" ]
+	then
+		mv "$key_in" "$key_by_serial_renewed"
+	fi
+
+	# move the rest of the files (p12, p7, ...)
+	# shellcheck disable=SC2231
+	for file in $EASYRSA_PKI/private/$1\.???
+	do
+		# get file extension
+		file_ext="${file##*.}"
+
+		[ -f "$file" ] && mv "$file" "$EASYRSA_PKI/renewed/private_by_serial/$cert_serial.$file_ext"
+	done
+
+	# remove the duplicate certificate in the certs_by_serial folder
+	rm "$crt_by_serial"
+
+	return 0
+
+} #= move_renewed()
 
 # gen-crl backend
 gen_crl() {
@@ -937,8 +1208,8 @@ Run easyrsa without commands for usage and command help."
 	want_key=1
 	while [ -n "$1" ]; do
 		case "$1" in
-			noca) want_ca= ;;
-			nokey) want_key= ;;
+			noca) want_ca="" ;;
+			nokey) want_key="" ;;
 			*) warn "Ignoring unknown command option: '$1'" ;;
 		esac
 		shift
@@ -1013,7 +1284,7 @@ See help output for usage details."
 	crypto="-aes256"
 	while [ -n "$1" ]; do
 		case "$1" in
-			nopass)	crypto= ;;
+			nopass)	crypto="" ;;
 			file)	file="$raw_file" ;;
 			*)	warn "Ignoring unknown command option: '$1'" ;;
 		esac
@@ -1028,9 +1299,14 @@ $file"
 If the key is currently encrypted you must supply the decryption passphrase.
 ${crypto:+You will then enter a new PEM passphrase for this key.$NL}"
 
-	"$EASYRSA_OPENSSL" "$key_type" -in "$file" -out "$file" $crypto || die "\
+	EASYRSA_TEMP_FILE_2="$file.temp"
+
+	"$EASYRSA_OPENSSL" "$key_type" -in "$file" -out "$EASYRSA_TEMP_FILE_2" $crypto || die "\
 Failed to change the private key passphrase. See above for possible openssl
 error messages."
+
+	mv "$EASYRSA_TEMP_FILE_2" "$file" || die "\
+Failed to change the private key passphrase. See above for error messages."
 
 	notice "Key passphrase successfully changed"
 	
@@ -1131,6 +1407,42 @@ $in_file
 OpenSSL failure to process the input"
 } # => show()
 
+# show-ca command backend
+# Prints CA cert details in a readable format
+show_ca() {
+	# opts support
+	opts="-certopt no_pubkey,no_sigdump"
+	while [ -n "$1" ]; do
+		case "$1" in
+			full) opts= ;;
+			*) warn "Ignoring unknown command option: '$1'" ;;
+		esac
+		shift
+	done
+
+	verify_ca_init
+	in_file="$EASYRSA_PKI/ca.crt"
+	format="x509"
+
+	# Verify file exists and is of the correct type
+	[ -f "$in_file" ] || die "\
+No such $type file with a basename of '$name' is present.
+Expected to find this file at:
+$in_file"
+	verify_file $format "$in_file" || die "\
+This file is not a valid $type file:
+$in_file"
+
+	notice "\
+Showing $type details for 'ca'.
+This file is stored at:
+$in_file
+"
+	"$EASYRSA_OPENSSL" $format -in "$in_file" -noout -text\
+		-nameopt multiline $opts || die "\
+OpenSSL failure to process the input"
+} # => show_ca()
+
 # vars setup
 # Here sourcing of 'vars' if present occurs. If not present, defaults are used
 # to support running without a sourced config format
@@ -1186,6 +1498,7 @@ Note: using Easy-RSA configuration from: $vars"
 	set_var EASYRSA_EC_DIR		"$EASYRSA_PKI/ecparams"
 	set_var EASYRSA_CA_EXPIRE	3650
 	set_var EASYRSA_CERT_EXPIRE	1080 # new default of 36 months	
+	set_var EASYRSA_CERT_RENEW	30
 	set_var EASYRSA_CRL_DAYS	180
 	set_var EASYRSA_NS_SUPPORT	no
 	set_var EASYRSA_NS_COMMENT	"Easy-RSA (~VER~) Generated Certificate"
@@ -1244,7 +1557,7 @@ while :; do
 	# Separate option from value:
 	opt="${1%%=*}"
 	val="${1#*=}"
-	empty_ok= # Empty values are not allowed unless excepted
+	empty_ok="" # Empty values are not allowed unless excepted
 
 	case "$opt" in
 	--days)
@@ -1319,7 +1632,11 @@ done
 vars_setup
 
 # Register clean_temp and prog_exit on SIGHUP, SIGINT, SIGQUIT, and SIGABRT
-trap "clean_temp; prog_exit" 0 1 2 3 6
+trap "clean_temp; prog_exit 1" 1 
+trap "clean_temp; prog_exit 2" 2
+trap "clean_temp; prog_exit 3" 3
+trap "clean_temp; prog_exit 6" 6
+trap "clean_temp; prog_exit 15" 15
 
 # determine how we were called, then hand off to the function responsible
 cmd="$1"
@@ -1346,11 +1663,17 @@ case "$cmd" in
 	build-server-full)
 		build_full server "$@"
 		;;
+	build-serverClient-full)
+		build_full serverClient "$@"
+		;;
 	gen-crl)
 		gen_crl
 		;;
 	revoke)
 		revoke "$@"
+		;;
+	renew)
+		renew "$@"
 		;;
 	import-req)
 		import_req "$@"
@@ -1375,6 +1698,9 @@ case "$cmd" in
 		;;
 	show-cert)
 		show cert "$@"
+		;;
+	show-ca)
+		show_ca "$@"
 		;;
 	""|help|-h|--help|--usage)
 		cmd_help "$1"
