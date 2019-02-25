@@ -137,6 +137,16 @@ W ramach zapytania, zwrócone zostały dane o obiekcie Entity odpowiadającemu `
     }
 ```
 
+Panel administratora
+--------------------
+
+Korzystanie z panelu administratora wymaga utworzenia konta `superuser` wraz z każdą nową bazą danych (po inicjalizacji/usunięciu `volume`). Wymaga to uruchomienia komendy wewnątrz kontenera `api`. Zakładając, że kontener nazywa się `pet-api`:
+
+```bash
+docker exec -it pet-api bash
+python3 manage.py createsuperuser
+```
+
 Endpointy
 ---------
 TODO

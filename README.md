@@ -20,8 +20,10 @@ Najprostszym sposobem uruchomienia całej aplikacji jest skorzystanie z narzędz
 
 Uruchomienie i zatrzymanie aplikacji ogranicza się do dwóch komend:
 
-    docker-compose up
-    docker-compose down
+```bash
+docker-compose up
+docker-compose down
+```
 
 Budowanie kontenerów, tworzenie sieci dockerowej, publikowanie portów itp. odbywa się automatycznie.
 
