@@ -8,8 +8,9 @@ Obraz api powstał na podstawie oficjalnego obrazu [Pythona][python-url] dostęp
 Przykłady
 ---------
 Zalecane mapowanie katalogów obrazu:
+
 |Katalog|Opis|
-|--|--|
+|---|---|
 |/opt/ca-data| Katalog w którym znajdują się pliki utworzonego CA. |
 |/opt/proxy| Katalog wykorzystywany w przykładach do utworzenia `volume` używanego przez `proxy`.|
 |/opt/client| Katalog wykorzystywany do udostępniania utworzonych certyfikatów klientów w systemie plików hosta. |
