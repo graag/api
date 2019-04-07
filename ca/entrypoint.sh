@@ -1,6 +1,8 @@
 if [ ! -f ./ca-data/.initialized ]; then
-    easyrsa init-pki
-    easyrsa build-ca
+    for command in init-pki build-ca gen-crl gen-dh
+    do
+        easyrsa $command
+    done
     touch ./ca-data/.initialized
     echo "ca initialized"
 else

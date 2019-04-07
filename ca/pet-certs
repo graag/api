@@ -1,0 +1,69 @@
+#!/bin/bash
+
+ROOT="/source/pki"
+CA_CERT="$ROOT/ca.crt"
+CERT="$ROOT/issued"
+KEY="$ROOT/private"
+CRL="$ROOT/crl.pem"
+DH="$ROOT/dh.pem"
+
+function run {
+    docker-compose run --rm ca "$@"
+}
+
+function copy {
+    # $1 copy destination
+    # $2... file locations
+    destination=$1
+    if [ -z "$destination" ]; then
+        echo "No path for import specified."
+        exit 0
+    fi
+    echo "Import to $filename"
+
+    shift
+    container_id=$(docker run -d -v ca-data:/source python)
+    echo "Started container: $container_id"
+    for source_file in "$@"
+    do
+        echo "Copying $source_file"
+        docker cp $container_id:$source_file $destination
+    done
+    docker rm -f $container_id
+}
+
+function gen {
+    request=$1
+    type=$2
+    echo "Generating $type certificate $request"
+    run gen-req $request nopass
+    echo "Signing $type certificate $request"
+    run sign-req $type $request
+}
+
+function gen-client {
+    request=$1
+    filename=$2
+    gen $request client
+    copy $filename "$KEY/$request.key" "$CERT/$request.crt" "$CA_CERT"
+}
+
+function gen-proxy {
+    request=$1
+    filename=$2
+    gen $request server
+    copy $filename "$KEY/$request.key" "$CERT/$request.crt" "$CRL" "$DH" "$CA_CERT"
+}
+
+option=$1
+shift
+
+case "$option" in
+    gen-client) gen-client $@;;
+    gen-admin) echo "Soon";;
+    gen-proxy) gen-proxy $@;;
+    copy-ca-cert) copy $1 $CA_CERT;;
+    status) run "help";;
+    copy) copy $@;;
+    pass) shift; echo "$@";;
+esac
