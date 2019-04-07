@@ -2,28 +2,40 @@ version: "3.7"
 services:
     
     db:
-        build: ./db
+        image: mariadb:1.2.3
         container_name: pet-db
-        networks: 
-            - pet-net
         volumes:
             - type: volume
               source: db-data
               target: /var/lib/mysql
         environment:
             - MYSQL_ROOT_PASSWORD=5tgb6yhn
+            - MYSQL_DATABASE=pet_db
+            - MYSQL_USER=pet_user
+            - MYSQL_PASSWORD=5tgb6yhn
+        restart: always
     api:
         depends_on: 
             - db
         build: ./api
         container_name: pet-api
-        networks: 
-            - pet-net
+        volumes:
+            - type: volume
+              source: static-data
+              target: /statics
         environment:
-            - API_DEBUG=True
-            - API_HOSTS=pet-api
+            - DB_DEBUG=False
             - DB_NAME=pet_db
+            - DB_USER=pet_user
+            - DB_PASS=5tgb6yhn
             - DB_HOST=pet-db
+            - DB_PORT=3306
+            - API_DEBUG=True
+            - API_HOSTS=pet-api,localhost
+            - API_SECRET="${API_SECRET}"
+        ports:
+            - "8001:8000"
+        restart: always
     proxy:
         depends_on: 
             - api
@@ -34,18 +46,19 @@ services:
               source: proxy-data
               target: /certs
               read_only: true
-        networks: 
-            - pet-net
         ports: 
             - "8000:8000"
+        restart: always
 
 networks:
-    pet-net:
+    default:
+        driver: bridge
+        name: pet-net
 
 volumes:
     db-data:
         name: db-data
     proxy-data:
         external: true
-        name: proxy-data-test
+        name: proxy-data
 

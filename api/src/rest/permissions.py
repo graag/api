@@ -9,3 +9,20 @@ class IsPetPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return request.entity is not None
+
+
+class PETAuthPermission(permissions.BasePermission):
+    TYPE = None
+
+    def has_permission(self, request, view):
+        if request.auth == self.TYPE:
+            return True
+        return False
+
+
+class ClientPermission(PETAuthPermission):
+    TYPE = 'client'
+
+
+class AdminPermission(PETAuthPermission):
+    TYPE = 'admin'

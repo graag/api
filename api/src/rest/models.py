@@ -88,10 +88,10 @@ class Job(models.Model):
     )
 
     input_data = models.ManyToManyField(
-        to='File', related_name='destination_task', blank=True
+        to='File', related_name='destination_job', blank=True
     )
     output_data = models.ManyToManyField(
-        to='File', related_name='source_task', blank=True
+        to='File', related_name='source_job', blank=True
     )
 
     out_file = models.OneToOneField(

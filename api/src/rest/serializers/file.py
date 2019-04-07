@@ -1,5 +1,6 @@
-from rest_framework import serializers
 from .. import models
+
+from rest_framework import serializers
 
 
 class FileSerializer(serializers.ModelSerializer):
@@ -7,14 +8,3 @@ class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.File
         fields = '__all__'
-        extra_kwargs = {
-            'task': {'write_only': True},
-        }
-
-
-class FileIDSerializer(serializers.ModelSerializer):
-    '''Read only, ID serializer'''
-    class Meta:
-        model = models.File
-        fields = ('id',)
-        read_only_fields = ('id',)

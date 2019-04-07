@@ -1,34 +1,20 @@
-from django.urls import path
 from . import views
-from . import test_views
+
+from django.urls import path
 
 urlpatterns = [
-    path('test', test_views.index),
-    path('entity', views.EntityView.as_view()),
-    path('tasks', views.TaskListCreate.as_view()),
-
-    path(
-        'task/<int:pk>/files',
-        views.ListTaskFiles.as_view(),
-        kwargs={'type': None}
-    ),
-    path(
-        'task/<int:pk>/input_files',
-        views.ListTaskFiles.as_view(),
-        kwargs={'type': 'input'}
-    ),
-    path(
-        'task/<int:pk>/output_files',
-        views.ListTaskFiles.as_view(),
-        kwargs={'type': 'output'}
-    ),
-
-    path('task/<int:pk>/status', views.TaskStatusView.as_view()),
-    path('task/<int:pk>/log', views.TaskLogView.as_view()),
-    path('task/<int:pk>/kill', views.TaskKillView.as_view()),
-
-
-    path('authorizations', views.AuthorizationView.as_view()),
-    path('authorizations/active', views.AuthorizationActiveView.as_view()),
-    path('cert/entities', views.EntityCAView.as_view())
+    # path('tasks', views.TaskListCreate.as_view()),
+    # path('task/<int:pk>/files',views.ListTaskFiles.as_view(),),
+    # path('task/<int:pk>/kill', views.TaskKillView.as_view()),
+    # admin
+    path('entities', views.EntityList.as_view()),
+    path('entities/<int:pk>', views.EntityDetails.as_view()),
+    path('authorizations', views.AuthorizationList.as_view()),
+    path('authorizations/<int:pk>', views.AuthorizationDetails.as_view()),
+    path('files', views.FileList.as_view()),
+    path('files/<int:pk>', views.FileDetails.as_view()),
+    path('jobs', views.JobList.as_view()),
+    # client
+    path('entity', views.EntityClientView.as_view()),
+    path('entity/authorizations', views.AuthorizationClientView.as_view()),
 ]

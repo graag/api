@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  ca:
+    build: .
+    container_name: pet-ca
+    volumes:
+        - type: volume
+          source: ca-data
+          target: /opt/ca-data
+volumes:
+    ca-data:
+        name: ca-data
+

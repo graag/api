@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('API_SECRET')
 if not SECRET_KEY:
-    print('Missing SECRET_KEY in enviromemt, ./secret_key fallback.')
-    with open('secret_key') as f:
-        SECRET_KEY = f.read().strip()
+    print('Missing API_SECRET env variable.')
+    sys.exit(1)
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if os.environ.get('API_DEBUG', None) == 'True' else False
 
@@ -33,7 +34,7 @@ ALLOWED_HOSTS = list(os.environ.get('API_HOSTS').split(','))
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -41,12 +42,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'django_filters',
 
     'rest.apps.RestConfig',
 ]
 
 MIDDLEWARE = [
-    'rest.middleware.AuthMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -123,6 +124,9 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest.authentication.PETAuthentication',
     )
 }
 

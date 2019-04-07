@@ -1,14 +1,10 @@
-from rest_framework import serializers
-from .. import models
 from . import job, file
+from .. import models
+
+from rest_framework import serializers
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    ''' Required fields: entity
-        Optional fields: parameters, comments, task_type, priority
-        Serializes to: id, task_status, issued_date, started_date,
-        completed_date, priority, parameters, comments, task_type'''
-
     jobs = job.JobSerializer(many=True, read_only=True)
     files = file.FileSerializer(many=True, read_only=True)
     log_file = file.FileSerializer(read_only=True)
@@ -23,22 +19,3 @@ class TaskSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'entity': {'write_only': True},
         }
-
-
-class TaskStatusSerializer(serializers.ModelSerializer):
-    jobs = job.JobStatusSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = models.Task
-        fields = ('id', 'task_status', 'jobs')
-        read_only_fields = ('id', 'task_status')
-
-
-class TaskLogSerializer(serializers.ModelSerializer):
-    jobs = job.JobLogSerializer(many=True, read_only=True)
-    log_file = file.FileSerializer(read_only=True)
-
-    class Meta:
-        model = models.Task
-        fields = ('id', 'task_status', 'jobs', 'log_file')
-        read_only_fields = ('id', 'task_status')

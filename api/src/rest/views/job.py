@@ -1,50 +1,33 @@
-from rest_framework import generics
+from . import common
 from .. import models, serializers
-from rest_framework.generics import get_object_or_404
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework import permissions
-import datetime
 
-''' class JobTScopeLCView(generics.ListCreateAPIView):
-    serializer_class = serializers.JobBasicSerializer
+from django_filters import rest_framework
+from rest_framework import generics, filters
 
-    def get_queryset(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = get_object_or_404(models.Task.objects.all(), **filter_kwargs)
-        queryset = obj.jobs
-        return queryset
 
-    def create(self, request, *args, **kwargs):
-        data=request.data
-        data['task'] = kwargs['pk']
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+class JobFilter(rest_framework.FilterSet):
+    class Meta:
+        model = models.Job
+        fields = {
+            'id': ['lt', 'gt'],
+            'task': ['exact'],
+            'exit_code': ['exact'],
+            'job_status': ['exact'],
+            'started_date': ['exact', 'gt', 'gte', 'lt', 'lte'],
+            'completed_date': ['exact', 'gt', 'gte', 'lt', 'lte']
+        }
 
-class JobLView(generics.ListAPIView):
-    serializer_class = serializers.JobBasicSerializer
+
+class JobList(generics.ListAPIView):
     queryset = models.Job.objects.all()
-
-class JobRUDView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = serializers.JobBasicSerializer
-    queryset = models.Job.objects.all()
-
-class JobStartView(generics.CreateAPIView):
-    def create(request, *args, **kwargs):
-        filter_kwargs = {'id': kwargs['pk']}
-        obj = get_object_or_404(models.Job.objects.all(), **filter_kwargs)
-        obj.start_date = datetime.datetime.now()
-        obj.save()
-        return Response(status=status.HTTP_201_CREATED)
-
-class JobFinishView(generics.CreateAPIView):
-    def create(request, *args, **kwargs):
-        filter_kwargs = {'id': kwargs['pk']}
-        obj = get_object_or_404(models.Job.objects.all(), **filter_kwargs)
-        obj.finish_date = datetime.datetime.now()
-        obj.save()
-        return Response(status=status.HTTP_201_CREATED) '''
+    serializer_class = serializers.JobSerializer
+    filter_backends = (
+        rest_framework.DjangoFilterBackend,
+        common.PETSearchFilter,
+        filters.OrderingFilter,
+    )
+    filterset_class = JobFilter
+    search_fields = ('job_status', 'job_description', 'job_params')
+    ordering_fields = ('id',)
+    ordering = ('-id',)
+    pagination_class = common.PETPagination

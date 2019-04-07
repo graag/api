@@ -1,12 +1,13 @@
 FROM python:3.7
 
-ENV EASYRSA_PKI=/opt/ca-data/pki
-RUN mkdir /opt/proxy && \
+WORKDIR /opt
+RUN git clone --branch v3.0.6 https://github.com/OpenVPN/easy-rsa.git && \
+    mkdir /opt/proxy && \
     mkdir /opt/client && \
     mkdir /opt/pki
 
-WORKDIR /opt
+ENV EASYRSA_PKI=/opt/ca-data/pki
+ENV PATH=$PATH:/opt/easy-rsa/easyrsa3
 
-COPY ./easyrsa-src .
-COPY ./ca-entrypoint.py .
-ENTRYPOINT ["/bin/bash"]
+COPY ./entrypoint.sh .
+ENTRYPOINT ["/bin/bash", "./entrypoint.sh"]
