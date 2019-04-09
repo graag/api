@@ -6,7 +6,7 @@ from django.dispatch import receiver
 class Authorization(models.Model):
     subject = models.CharField(max_length=45)
 
-    fingerprint = models.CharField(max_length=45)
+    fingerprint = models.CharField(max_length=64)
 
     start_date = models.DateTimeField()
     expiry_date = models.DateTimeField()

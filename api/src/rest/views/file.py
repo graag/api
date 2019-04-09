@@ -2,7 +2,7 @@ from . import common
 from .. import models, serializers
 
 from django_filters import rest_framework
-from rest_framework import generics, filters
+from rest_framework import filters, viewsets
 
 
 class FileFilter(rest_framework.FilterSet):
@@ -19,7 +19,7 @@ class FileFilter(rest_framework.FilterSet):
         }
 
 
-class FileList(generics.ListCreateAPIView):
+class FileViewSet(viewsets.ModelViewSet):
     queryset = models.File.objects.all()
     serializer_class = serializers.FileSerializer
     filter_backends = (
@@ -34,6 +34,7 @@ class FileList(generics.ListCreateAPIView):
     pagination_class = common.PETPagination
 
 
-class FileDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.File.objects.all()
-    serializer_class = serializers.FileSerializer
+class FileClientViewSet(FileViewSet):
+
+    def get_queryset(self):
+        self.request.entity.files.all()

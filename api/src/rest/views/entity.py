@@ -3,6 +3,7 @@ from .. import models, serializers, permissions
 from rest_framework import generics
 from django_filters import rest_framework
 from rest_framework import filters
+from rest_framework import viewsets
 
 
 class EntityFilter(rest_framework.FilterSet):
@@ -17,8 +18,8 @@ class EntityFilter(rest_framework.FilterSet):
         }
 
 
-class EntityList(generics.ListCreateAPIView):
-    permission_classes = (permissions.AdminPermission,)
+class EntityViewSet(viewsets.ModelViewSet):
+    # permission_classes = (permissions.AdminPermission,)
     queryset = models.Entity.objects.all()
     serializer_class = serializers.EntitySerializer
     filter_backends = (
@@ -31,12 +32,6 @@ class EntityList(generics.ListCreateAPIView):
     ordering_fields = ('id', 'timestamp')
     ordering = ('-id',)
     pagination_class = common.PETPagination
-
-
-class EntityDetails(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (permissions.AdminPermission,)
-    queryset = models.Entity.objects.all()
-    serializer_class = serializers.EntitySerializer
 
 
 class EntityClientView(generics.RetrieveAPIView):

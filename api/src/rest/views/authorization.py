@@ -2,7 +2,7 @@ from . import common
 from .. import models, serializers, permissions
 
 from django_filters import rest_framework
-from rest_framework import generics, filters
+from rest_framework import generics, filters, viewsets
 
 
 class AuthorizationFilter(rest_framework.FilterSet):
@@ -19,7 +19,7 @@ class AuthorizationFilter(rest_framework.FilterSet):
         }
 
 
-class AuthorizationList(generics.ListAPIView):
+class AuthorizationViewSet(viewsets.ModelViewSet):
     queryset = models.Authorization.objects.all()
     serializer_class = serializers.AuthorizationSerializer
     filter_backends = (
@@ -32,11 +32,6 @@ class AuthorizationList(generics.ListAPIView):
     ordering_fields = ('id', 'timestamp')
     ordering = ('-id',)
     pagination_class = common.PETPagination
-
-
-class AuthorizationDetails(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.Authorization.objects.all()
-    serializer_class = serializers.AuthorizationSerializer
 
 
 class AuthorizationClientView(generics.ListAPIView):

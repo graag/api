@@ -31,3 +31,7 @@ class JobList(generics.ListAPIView):
     ordering_fields = ('id',)
     ordering = ('-id',)
     pagination_class = common.PETPagination
+
+
+class JobClientView(JobList):
+    pass
