@@ -6,7 +6,7 @@ from django.dispatch import receiver
 class Authorization(models.Model):
     subject = models.CharField(max_length=45)
 
-    fingerprint = models.CharField(max_length=64)
+    fingerprint = models.CharField(max_length=74)
 
     start_date = models.DateTimeField()
     expiry_date = models.DateTimeField()
@@ -46,7 +46,7 @@ class Task(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     priority = models.IntegerField(default=1)
-    parameters = models.CharField(max_length=45, null=True)
+    parameters = models.CharField(max_length=45, null=True, default=None)
     comments = models.TextField(null=True, default=None)
 
     task_type = models.CharField(max_length=45, null=True, default=None)
@@ -103,7 +103,7 @@ class Job(models.Model):
         null=True, default=None, related_name='err_of_job'
     )
 
-    exit_code = models.IntegerField(null=True, default=True)
+    exit_code = models.IntegerField(null=True, default=None)
     task = models.ForeignKey(
         to='Task', on_delete=models.CASCADE, related_name='jobs'
     )

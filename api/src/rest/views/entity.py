@@ -1,9 +1,13 @@
 from . import common
-from .. import models, serializers, permissions
-from rest_framework import generics
+from .. import models, serializers, permissions, authentication
+
 from django_filters import rest_framework
-from rest_framework import filters
-from rest_framework import viewsets
+from rest_framework import generics, filters, viewsets, decorators
+from rest_framework.response import Response
+from rest_framework import status
+
+from datetime import datetime
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 
 class EntityFilter(rest_framework.FilterSet):
@@ -19,7 +23,6 @@ class EntityFilter(rest_framework.FilterSet):
 
 
 class EntityViewSet(viewsets.ModelViewSet):
-    # permission_classes = (permissions.AdminPermission,)
     queryset = models.Entity.objects.all()
     serializer_class = serializers.EntitySerializer
     filter_backends = (
@@ -36,7 +39,7 @@ class EntityViewSet(viewsets.ModelViewSet):
 
 class EntityClientView(generics.RetrieveAPIView):
     permission_classes = (permissions.ClientPermission,)
-    serializer_class = serializers.EntitySerializer
+    serializer_class = serializers.EntityClientSerializer
 
     def get_object(self):
         return self.request.entity

@@ -34,9 +34,16 @@ class AuthorizationViewSet(viewsets.ModelViewSet):
     pagination_class = common.PETPagination
 
 
+class EntityAuthorizationViewSet(AuthorizationViewSet):
+
+    def get_queryset(self):
+        print(self.request)
+        return models.Authorization.objects.all()
+
+
 class AuthorizationClientView(generics.ListAPIView):
     permission_classes = (permissions.ClientPermission,)
-    serializer_class = serializers.AuthorizationSerializer
+    serializer_class = serializers.AuthorizationClientSerializer
 
     def get_queryset(self):
         return self.request.entity.authorizations.all()

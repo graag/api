@@ -1,8 +1,8 @@
 version: "3.7"
-services:
-    
+
+services:    
     db:
-        image: mariadb:1.2.3
+        image: mariadb
         container_name: pet-db
         volumes:
             - type: volume
@@ -18,11 +18,12 @@ services:
         depends_on: 
             - db
         build: ./api
+        image: pet/api
         container_name: pet-api
         volumes:
             - type: volume
               source: static-data
-              target: /statics
+              target: /static
         environment:
             - DB_DEBUG=False
             - DB_NAME=pet_db
@@ -31,23 +32,31 @@ services:
             - DB_HOST=pet-db
             - DB_PORT=3306
             - API_DEBUG=True
-            - API_HOSTS=pet-api,localhost
-            - API_SECRET="${API_SECRET}"
+            - API_HOSTS=pet-api,localhost,proxy
+            - API_SECRET=test
+            - ADMIN_USER=admin
+            - ADMIN_MAIL=admin@mail.com
+            - ADMIN_PASSWORD=test
         ports:
-            - "8001:8000"
+            - "8000:8000"
         restart: always
     proxy:
         depends_on: 
             - api
         build: ./proxy
+        image: pet/proxy
         container_name: pet-proxy
         volumes:
+            - type: volume
+              source: static-data
+              target: /static
             - type: volume
               source: proxy-data
               target: /certs
               read_only: true
         ports: 
-            - "8000:8000"
+            - "8080:8080"
+            - "8081:8081"
         restart: always
 
 networks:
@@ -59,6 +68,6 @@ volumes:
     db-data:
         name: db-data
     proxy-data:
-        external: true
         name: proxy-data
-
+    static-data:
+        name: static-data

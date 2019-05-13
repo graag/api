@@ -8,7 +8,7 @@ RUN pip install -r /requirements.pip
 
 RUN mkdir /opt/pet_api
 COPY ./src /opt/pet_api
-COPY ./entrypoint.sh /opt/pet_api
+
 WORKDIR /opt/pet_api
 
 EXPOSE 8000

@@ -2,7 +2,7 @@ from . import common
 from .. import models, serializers
 
 from django_filters import rest_framework
-from rest_framework import generics, filters
+from rest_framework import filters, viewsets
 
 
 class JobFilter(rest_framework.FilterSet):
@@ -18,7 +18,7 @@ class JobFilter(rest_framework.FilterSet):
         }
 
 
-class JobList(generics.ListAPIView):
+class JobViewSet(viewsets.ModelViewSet):
     queryset = models.Job.objects.all()
     serializer_class = serializers.JobSerializer
     filter_backends = (
@@ -33,5 +33,5 @@ class JobList(generics.ListAPIView):
     pagination_class = common.PETPagination
 
 
-class JobClientView(JobList):
+class JobClientView(JobViewSet):
     pass

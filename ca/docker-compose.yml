@@ -2,6 +2,7 @@ version: "3.7"
 services:
   ca:
     build: .
+    image: pet/ca
     container_name: pet-ca
     volumes:
         - type: volume
