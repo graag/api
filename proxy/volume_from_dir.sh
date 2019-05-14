@@ -13,7 +13,7 @@ if [ -z "$directory" ]; then
     exit 0
 fi
 
-container_id=$(docker run -d -v $volume:/volume python)
+container_id=$(docker run -d -v $volume:/volume python:3.7)
 echo "Started container: $container_id"
 for file in $(ls)
 do

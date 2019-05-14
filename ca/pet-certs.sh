@@ -58,6 +58,7 @@ function gen-client { # common_name directory
     echo "Request file: $filename"
 
     gen client $common_name $filename
+    run export-p12 $filename
     if [ ! -z $directory ]; then
         echo "Path specified, copying files to $directory"
         copy-client $directory $filename
@@ -67,8 +68,8 @@ function gen-client { # common_name directory
 function copy-client {
     directory=$1
     filename=$2
-    copy $directory "$KEY/$filename.key" "$CERT/$filename.crt" "$CA_CERT"
-    echo "Generating json for $request"
+    copy $directory "$KEY/$filename.key" "$CERT/$filename.crt" "$CA_CERT" "$KEY/$filename.p12"
+    echo "Generating json for $filename"
     gen-json $filename > "$directory/$filename.json"
 }
 
