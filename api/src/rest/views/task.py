@@ -11,7 +11,7 @@ class TaskList(generics.ListAPIView):
 
 class TaskListCreate(generics.GenericAPIView, mixins.ListModelMixin):
     serializer_class = serializers.TaskSerializer
-    permission_classes = (permissions.ClientPermission,)
+    permission_classes = (permissions.PETAuthPermission,)
 
     def get_queryset(self):
         queryset = self.request.entity.tasks.all()

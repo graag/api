@@ -69,6 +69,9 @@ class File(models.Model):
     task = models.ForeignKey(
         to='Task', on_delete=models.CASCADE, related_name='files'
     )
+    entity = models.ForeignKey(
+        to='Entity', on_delete=models.CASCADE, related_name='files'
+    )
 
 
 class Job(models.Model):
@@ -106,6 +109,9 @@ class Job(models.Model):
     exit_code = models.IntegerField(null=True, default=None)
     task = models.ForeignKey(
         to='Task', on_delete=models.CASCADE, related_name='jobs'
+    )
+    entity = models.ForeignKey(
+        to='Entity', on_delete=models.CASCADE, related_name='jobs'
     )
 
 

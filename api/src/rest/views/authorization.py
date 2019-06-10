@@ -42,7 +42,7 @@ class EntityAuthorizationViewSet(AuthorizationViewSet):
 
 
 class AuthorizationClientView(generics.ListAPIView):
-    permission_classes = (permissions.ClientPermission,)
+    permission_classes = (permissions.PETAuthPermission,)
     serializer_class = serializers.AuthorizationClientSerializer
 
     def get_queryset(self):

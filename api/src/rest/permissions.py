@@ -2,17 +2,8 @@ from rest_framework import permissions
 
 
 class PETAuthPermission(permissions.BasePermission):
-    TYPE = None
 
-    def has_permission(self, request, view):
-        if request.auth == self.TYPE:
-            return True
-        return False
-
-
-class ClientPermission(PETAuthPermission):
-    TYPE = 'client'
-
-
-class AdminPermission(PETAuthPermission):
-    TYPE = 'admin'
+    def has_object_permission(self, request, view, obj):
+        # Instance must have an attribute named `entity`.
+        entity = getattr(request, 'entity', None)
+        return entity and (obj == entity or obj.entity == entity)
