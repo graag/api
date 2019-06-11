@@ -13,7 +13,7 @@ admin_router = routers.SimpleRouter(
 )
 
 admin_router.register('entities', views.EntityViewSet)
-admin_router.register('authorizations', views.AuthorizationViewSet)
+admin_router.register('authorizations', views.AdminAuthorizationViewSet)
 admin_router.register('files', views.FileViewSet)
 admin_router.register('jobs', views.JobViewSet)
 
@@ -21,6 +21,15 @@ schema_view = get_swagger_view(title='Pet API')
 
 # fixes redirect in admin panel 'VIEW SITE'
 admin.site.site_url = '/admin/entities'
+
+client_router = routers.SimpleRouter(
+    trailing_slash=False
+)
+client_router.register(
+    'authorizations',
+    views.ClientAuthorizationViewSet,
+    basename='authorizations'
+)
 
 urlpatterns = [
     path('admin/', include(admin_router.urls)),
@@ -34,4 +43,5 @@ urlpatterns = [
     path('admin/panel', admin.site.urls),
     # Client views
     path('client/entity', views.EntityClientView.as_view()),
+    path('client/', include(client_router.urls)),
 ]

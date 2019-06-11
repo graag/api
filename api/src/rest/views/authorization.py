@@ -19,8 +19,7 @@ class AuthorizationFilter(rest_framework.FilterSet):
         }
 
 
-class AuthorizationViewSet(viewsets.ModelViewSet):
-    queryset = models.Authorization.objects.all()
+class AuthorizationMixin:
     serializer_class = serializers.AuthorizationSerializer
     filter_backends = (
         rest_framework.DjangoFilterBackend,
@@ -34,16 +33,14 @@ class AuthorizationViewSet(viewsets.ModelViewSet):
     pagination_class = common.PETPagination
 
 
-class EntityAuthorizationViewSet(AuthorizationViewSet):
-
-    def get_queryset(self):
-        print(self.request)
-        return models.Authorization.objects.all()
+class AdminAuthorizationViewSet(AuthorizationMixin, viewsets.ModelViewSet):
+    queryset = models.Authorization.objects.all()
 
 
-class AuthorizationClientView(generics.ListAPIView):
+class ClientAuthorizationViewSet(
+        AuthorizationMixin,
+        viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.PETAuthPermission,)
-    serializer_class = serializers.AuthorizationClientSerializer
 
     def get_queryset(self):
         return self.request.entity.authorizations.all()
