@@ -1,5 +1,5 @@
 from . import common
-from .. import models, serializers
+from .. import models, serializers, permissions
 
 from django_filters import rest_framework
 from rest_framework import filters, viewsets
@@ -19,6 +19,20 @@ class FileFilter(rest_framework.FilterSet):
         }
 
 
+class FileMixin:
+    serializer_class = serializers.FileSerializer
+    filter_backends = (
+        rest_framework.DjangoFilterBackend,
+        common.PETSearchFilter,
+        filters.OrderingFilter,
+    )
+    filterset_class = FileFilter
+    search_fields = ('name', 'comments', 'path')
+    ordering_fields = ('id',)
+    ordering = ('-id',)
+    pagination_class = common.PETPagination
+
+
 class FileViewSet(viewsets.ModelViewSet):
     queryset = models.File.objects.all()
     serializer_class = serializers.FileSerializer
@@ -35,6 +49,7 @@ class FileViewSet(viewsets.ModelViewSet):
 
 
 class FileClientViewSet(FileViewSet):
+    permission_classes = (permissions.PETAuthPermission,)
 
     def get_queryset(self):
-        self.request.entity.files.all()
+        return self.request.entity.authorizations.all()

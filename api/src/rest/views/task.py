@@ -2,6 +2,33 @@ from .. import models, serializers, permissions
 
 from rest_framework import generics, mixins, exceptions
 from rest_framework.response import Response
+from . import common
+
+from django_filters import rest_framework
+from rest_framework import filters, viewsets
+
+
+class TaskFilter(rest_framework.FilterSet):
+    class Meta:
+        model = models.Task
+        fields = {
+            'id': ['lt', 'gt'],
+        }
+
+
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = models.Task.objects.all()
+    serializer_class = serializers.TaskSerializer
+    filter_backends = (
+        rest_framework.DjangoFilterBackend,
+        common.PETSearchFilter,
+        filters.OrderingFilter,
+    )
+    filterset_class = TaskFilter
+    # search_fields = ('name', 'comments', 'path')
+    ordering_fields = ('id',)
+    ordering = ('-id',)
+    pagination_class = common.PETPagination
 
 
 class TaskList(generics.ListAPIView):

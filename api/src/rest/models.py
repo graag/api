@@ -87,7 +87,8 @@ class Job(models.Model):
     job_params = models.CharField(max_length=45, null=True, default=None)
 
     job_previous = models.ManyToManyField(
-        to='Job', related_name='job_next', default=None
+        to='Job', related_name='job_next', default=None,
+        blank=True
     )
 
     input_data = models.ManyToManyField(

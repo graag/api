@@ -7,15 +7,21 @@ from rest_framework_swagger.views import get_swagger_view
 
 from . import views
 
-
 admin_router = routers.SimpleRouter(
     trailing_slash=False
 )
 
-admin_router.register('entities', views.EntityViewSet)
-admin_router.register('authorizations', views.AdminAuthorizationViewSet)
-admin_router.register('files', views.FileViewSet)
-admin_router.register('jobs', views.JobViewSet)
+admin_routes = {
+    'entities': views.EntityViewSet,
+    'authorizations': views.AdminAuthorizationViewSet,
+    'files': views.FileViewSet,
+    'jobs': views.JobViewSet,
+    'tasks': views.TaskViewSet
+}
+
+for endpoint, view in admin_routes.items():
+    admin_router.register(endpoint, view)
+
 
 schema_view = get_swagger_view(title='Pet API')
 

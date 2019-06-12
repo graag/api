@@ -5,6 +5,12 @@ from rest_framework import serializers
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Task
+        fields = ('__all__')
+
+
+class BatchTaskSerializer(serializers.ModelSerializer):
     jobs = job.JobSerializer(many=True, read_only=True)
     files = file.FileSerializer(many=True, read_only=True)
     log_file = file.FileSerializer(read_only=True)
