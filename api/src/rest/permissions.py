@@ -1,12 +1,9 @@
 from rest_framework import permissions
 
 
-class IsPetPermission(permissions.BasePermission):
-    """
-    Check if pet is in database.
-    """
-    message = 'Bad PETNAME. No PET associated with this name.'
+class PETAuthPermission(permissions.BasePermission):
 
-    def has_permission(self, request, view):
-        print('PERMISSION', request.entity)
-        return request.entity is not None
+    def has_object_permission(self, request, view, obj):
+        # Instance must have an attribute named `entity`.
+        entity = getattr(request, 'entity', None)
+        return entity and (obj == entity or obj.entity == entity)

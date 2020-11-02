@@ -1,7 +1,7 @@
 FROM nginx
 
-RUN mkdir /opt/ssl
+RUN mkdir /certs && mkdir /static
 
 COPY ./nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 8000
+EXPOSE 8080 8081

@@ -1,61 +1,46 @@
-from rest_framework import generics
-from .. import serializers
-# from .. import models
-# from rest_framework.generics import get_object_or_404
-# from rest_framework import status
-# from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from datetime import datetime
+from . import common
+from .. import models, serializers, permissions
+
+from django_filters import rest_framework
+from rest_framework import generics, filters, viewsets
 
 
-class AuthorizationView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
+class AuthorizationFilter(rest_framework.FilterSet):
+    class Meta:
+        model = models.Authorization
+        fields = {
+            'id': ['lt', 'gt'],
+            'entity': ['exact'],
+            'subject': ['exact'],
+            'fingerprint': ['exact'],
+            'timestamp': ['exact', 'gt', 'gte', 'lt', 'lte'],
+            'start_date': ['exact', 'gt', 'gte', 'lt', 'lte'],
+            'expiry_date': ['exact', 'gt', 'gte', 'lt', 'lte'],
+        }
+
+
+class AuthorizationMixin:
     serializer_class = serializers.AuthorizationSerializer
+    filter_backends = (
+        rest_framework.DjangoFilterBackend,
+        common.PETSearchFilter,
+        filters.OrderingFilter,
+    )
+    filterset_class = AuthorizationFilter
+    search_fields = ('subject', 'fingerprint')
+    ordering_fields = ('id', 'timestamp')
+    ordering = ('-id',)
+    pagination_class = common.PETPagination
+
+
+class AdminAuthorizationViewSet(AuthorizationMixin, viewsets.ModelViewSet):
+    queryset = models.Authorization.objects.all()
+
+
+class ClientAuthorizationViewSet(
+        AuthorizationMixin,
+        viewsets.ReadOnlyModelViewSet):
+    permission_classes = (permissions.PETAuthPermission,)
 
     def get_queryset(self):
-        queryset = self.request.entity.authorizations.all()
-        return queryset
-
-
-class AuthorizationActiveView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
-    serializer_class = serializers.AuthorizationSerializer
-
-    def get_queryset(self):
-        time = datetime.now()
-        queryset = self.request.entity.authorizations\
-            .filter(start_date__lt=time)\
-            .filter(expiry_date__gt=time)
-        return queryset
-
-
-# class AuthorizationLView(generics.ListAPIView):
-#     serializer_class = serializers.AuthorizationLSerializer
-#     queryset = models.Authorization.objects.all()
-
-
-# class AuthorizationRUDView(generics.RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.AuthorizationRUDSerializer
-#     queryset = models.Authorization.objects.all()
-
-
-# class AuthorizationEScopeLCView(generics.ListCreateAPIView):
-#     serializer_class = serializers.AuthorizationLCSerializer
-
-#     def get_queryset(self):
-#         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-#         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-#         obj = get_object_or_404(models.Entity.objects.all(), **filter_kwargs)
-#         queryset = obj.authorizations
-#         return queryset
-
-#     def create(self, request, *args, **kwargs):
-#         data = request.data
-#         data['entity'] = kwargs['pk']
-#         serializer = self.get_serializer(data=data)
-#         serializer.is_valid(raise_exception=True)
-#         self.perform_create(serializer)
-#         headers = self.get_success_headers(serializer.data)
-#         return Response(
-#             serializer.data, status=status.HTTP_201_CREATED, headers=headers
-#         )
+        return self.request.entity.authorizations.all()

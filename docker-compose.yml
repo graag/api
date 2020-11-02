@@ -1,44 +1,73 @@
 version: "3.7"
-services:
-    
+
+services:    
     db:
-        build: ./db
-        container_name: pet_db
-        networks: 
-            - pet_net
-        volumes: 
-            - db_data:/var/lib/mysql
+        image: mariadb
+        container_name: pet-db
+        volumes:
+            - type: volume
+              source: db-data
+              target: /var/lib/mysql
         environment:
             - MYSQL_ROOT_PASSWORD=5tgb6yhn
+            - MYSQL_DATABASE=pet_db
+            - MYSQL_USER=pet_user
+            - MYSQL_PASSWORD=5tgb6yhn
+        restart: always
     api:
         depends_on: 
             - db
         build: ./api
-        container_name: pet_api
-        networks: 
-            - pet_net
+        image: pet/api
+        container_name: pet-api
+        volumes:
+            - type: volume
+              source: static-data
+              target: /static
         environment:
+            - DB_DEBUG=False
+            - DB_NAME=pet_db
+            - DB_USER=pet_user
+            - DB_PASS=5tgb6yhn
+            - DB_HOST=pet-db
+            - DB_PORT=3306
             - API_DEBUG=True
-            - API_HOSTS=api
+            - API_HOSTS=pet-api,localhost,proxy
+            - API_SECRET=test
+            - ADMIN_USER=admin
+            - ADMIN_MAIL=admin@mail.com
+            - ADMIN_PASSWORD=test
+        ports:
+            - "8000:8000"
+        restart: always
     proxy:
         depends_on: 
             - api
         build: ./proxy
-        container_name: pet_proxy
+        image: pet/proxy
+        container_name: pet-proxy
         volumes:
             - type: volume
-              source: proxy_certs
+              source: static-data
+              target: /static
+            - type: volume
+              source: proxy-data
               target: /certs
               read_only: true
-        networks: 
-            - pet_net
         ports: 
-            - "8000:8000"
+            - "8080:8080"
+            - "8081:8081"
+        restart: always
 
 networks:
-    pet_net:
+    default:
+        driver: bridge
+        name: pet-net
 
 volumes:
-    db_data:
-    proxy_certs:
-
+    db-data:
+        name: db-data
+    proxy-data:
+        name: proxy-data
+    static-data:
+        name: static-data
